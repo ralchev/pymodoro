@@ -39,7 +39,7 @@ def run_analysis():
     work_log = {}
     total_time = 0
     for record in work_records:
-        if record[1] in work_records:
+        if record[1] in work_log:
             work_log[record[1]] += record[2]
         else:
             work_log.update({record[1]: record[2]})
