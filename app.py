@@ -5,60 +5,84 @@ import time
 import sqlite3 as sqlite
 from datetime import datetime
 
-def check_database():
-    database = 'database.db'
+database = 'database.db'
+records_table = '''
+                CREATE TABLE IF NOT EXISTS records (
+                    id integer PRIMARY KEY,
+                    task text NOT NULL,
+                    period integer NOT NULL,
+                    time text NOT NULL);
+                '''
+
+# Currently only checks if we have a database file (not what its schema is) and if we don't, creates it using the records_table statement.
+def check_db():
     if not isfile(database):
-        database = sqlite.connect(database)
-        create_table(database)
-        database.close()
-        return database
-    return database
+        new_database = sqlite.connect(database)
+        cursor = new_database.cursor()
+        cursor.execute(records_table)
+        new_database.commit()
+        new_database.close()
 
-def create_table(database):
-    records_table = ''' CREATE TABLE IF NOT EXISTS records (
-                            id integer PRIMARY KEY,
-                            task text NOT NULL,
-                            period integer NOT NULL,
-                            time text NOT NULL);
-                            '''
-    cursor = database.cursor()
-    cursor.execute(records_table)
+def write(task, period):
+    working_db = sqlite.connect(database)
+    cursor = working_db.cursor()
+    cursor.execute('INSERT INTO records (task, period, time) VALUES (?, ?, ?)',(task, period, datetime.now()))
+    working_db.commit()
+    working_db.close()
 
-def write_to_database(task, period):
-    db = check_database()
-    database = sqlite.connect(db)
-    with database:
-        cursor = database.cursor()
-        cursor.execute('INSERT INTO records (task, period, time) VALUES (?, ?, ?)',(task, period, datetime.now()))
-        database.commit()
-        cursor.close()
+def run_analysis():
+    working_db = sqlite.connect(database)
+    cursor = working_db.cursor()
+    cursor.execute('''SELECT * FROM records WHERE time BETWEEN date('now') AND date('now', '+1 day');''')
+    work_records = cursor.fetchall()
+    working_db.close()
+    work_log = {}
+    total_time = 0
+    for record in work_records:
+        if record[1] in work_records:
+            work_log[record[1]] += record[2]
+        else:
+            work_log.update({record[1]: record[2]})
+    print('\nToday you have worked on:')
+    for task, time in work_log.items():
+        total_time += time
+        print('{}: {} minutes'.format(task, time))
+    print('\nIn total, you have spent {} hours and {} minutes'.format(total_time // 60, total_time % 60))
 
 def speak(string):
     speak_engine = pyttsx3.init()
     speak_engine.say(string)
     speak_engine.runAndWait()
 
-def start_work():
-    speak('What are you going to work on?')
+def start_work(task_list=[]):
+    print('What are you going to work on?')
+    if task_list:
+        print('This is what you have worked on until now:')
+        for task in task_list:
+            print(task + '\n')
     task = input('Task: \n')
-    speak('For how long?')
+    print('For how long?')
     period = int(input('Period in minutes: \n'))
-    write_to_database(task, period)
+    write(task, period)
+    if task not in task_list:
+        task_list.append(task)
     speak('Okay, you have {} minutes. Get started!'.format(period))
+    print('Working for {} minutes.'.format(period))
     time.sleep(period * 60)
-    speak('Okay, do you plan to work some more?')
+    speak('Okay, break is over. Come back here!')
+    print('Are you going to work some more?')
     to_work = input('y for YES and n for NO \n')
     if to_work.lower() == 'y':
         speak('Stop and take a short break.')
         print('Break for 5 minutes.')
         time.sleep(300)
-        start_work()
+        start_work(task_list)
     else:
-        speak('Go get some sleep now!')
-        #And here it will print how much time I have spent during the day
+        speak('Let\'s us see what you have worked on today.')
+        run_analysis()
+        speak('Now go get some sleep!')
 
-def main():
-    check_database()
+if __name__ == '__main__':
+# def main():
+    check_db()
     start_work()
-
-main()
