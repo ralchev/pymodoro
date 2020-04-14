@@ -69,13 +69,14 @@ def start_work(task_list=[]):
     speak('Okay, you have {} minutes. Get started!'.format(period))
     print('Working for {} minutes.'.format(period))
     time.sleep(period * 60)
-    speak('Okay, break is over. Come back here!')
+    speak('Okay, time to get up and move.')
     print('Are you going to work some more?')
     to_work = input('y for YES and n for NO \n')
     if to_work.lower() == 'y':
         speak('Stop and take a short break.')
         print('Break for 5 minutes.')
         time.sleep(300)
+        speak('Okay, break is over. Come back here!')
         start_work(task_list)
     else:
         speak('Let\'s us see what you have worked on today.')
