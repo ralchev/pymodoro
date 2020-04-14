@@ -83,6 +83,5 @@ def start_work(task_list=[]):
         speak('Now go get some sleep!')
 
 if __name__ == '__main__':
-# def main():
     check_db()
     start_work()
