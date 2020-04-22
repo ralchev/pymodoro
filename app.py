@@ -13,6 +13,12 @@ records_table = '''
                     period integer NOT NULL,
                     time text NOT NULL);
                 '''
+menu = {
+    'Start working': 'W',
+    'Run analysis': 'A',
+    'Take a break': 'B',
+    'Exit': 'E'
+}
 
 # Currently only checks if we have a database file (not what its schema is) and if we don't, creates it using the records_table statement.
 def check_db():
@@ -43,26 +49,26 @@ def run_analysis():
             work_log[record[1]] += record[2]
         else:
             work_log.update({record[1]: record[2]})
+    speak('Let us see what you have work on today.')
     print('\nToday you have worked on:')
     for task, time in work_log.items():
         total_time += time
         print('{}: {} minutes'.format(task, time))
-    print('\nIn total, you have spent {} hours and {} minutes'.format(total_time // 60, total_time % 60))
+    print('\nIn total, you have spent {} hours and {} minutes.\n'.format(total_time // 60, total_time % 60))
 
 def speak(string):
     speak_engine = pyttsx3.init()
+    speak_engine.setProperty('voice', 'com.apple.speech.synthesis.voice.samantha')
     speak_engine.say(string)
     speak_engine.runAndWait()
 
 def start_work(task_list=[]):
-    print('What are you going to work on?')
     if task_list:
         print('This is what you have worked on until now:')
         for task in task_list:
-            print(task + '\n')
-    task = input('Task: \n')
-    print('For how long?')
-    period = int(input('Period in minutes: \n'))
+            print(task)
+    task = input('What are you going to work on?\n')
+    period = int(input('For how long?\n'))
     write(task, period)
     if task not in task_list:
         task_list.append(task)
@@ -70,19 +76,33 @@ def start_work(task_list=[]):
     print('Working for {} minutes.'.format(period))
     time.sleep(period * 60)
     speak('Okay, time to get up and move.')
-    print('Are you going to work some more?')
-    to_work = input('y for YES and n for NO \n')
-    if to_work.lower() == 'y':
-        speak('Stop and take a short break.')
-        print('Break for 5 minutes.')
-        time.sleep(300)
-        speak('Okay, break is over. Come back here!')
-        start_work(task_list)
-    else:
-        speak('Let\'s us see what you have worked on today.')
+    init()
+
+def take_break():
+    print('Break for 5 minutes.')
+    speak('Okay, stop and take a short break.')
+    time.sleep(300)
+
+def init(cont='none'):
+    for action, hotkey in menu.items():
+        print('{} ({})'.format(action.ljust(13), hotkey))
+    command = input()
+    if command.lower() == 'w':
+        start_work()
+        init()
+    if command.lower() == 'b':
+        take_break()
+        init()
+    if command.lower() == 'a':
         run_analysis()
-        speak('Now go get some sleep!')
+        init()
+    if command.lower() == 'e':
+        print('Bye!')
+        exit()
+    else:
+        print('Wrong choice. Try again.')
+        init()
 
 if __name__ == '__main__':
     check_db()
-    start_work()
+    init()
