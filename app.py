@@ -15,6 +15,7 @@ records_table = '''
                 '''
 menu = {
     'Start working': 'W',
+    'Add work': 'C',
     'Run analysis': 'A',
     'Take a break': 'B',
     'Exit': 'E'
@@ -50,11 +51,23 @@ def run_analysis():
         else:
             work_log.update({record[1]: record[2]})
     speak('Let us see what you have work on today.')
-    print('\nToday you have worked on:')
+    print('Today you have worked on:')
     for task, time in work_log.items():
         total_time += time
         print('{}: {} minutes'.format(task, time))
-    print('\nIn total, you have spent {} hours and {} minutes.\n'.format(total_time // 60, total_time % 60))
+    print('In total, you have spent {} hours and {} minutes.'.format(total_time // 60, total_time % 60))
+
+def add_work():
+    print('Okay, but please do not cheat!')
+    task = str(input('What did you work on?\n'))
+    period = str(input('For how long?\n'))
+    time = str(input('When? Current time is {}. Use this format, please!\n'.format(datetime.now())))
+    working_db = sqlite.connect(database)
+    cursor = working_db.cursor()
+    cursor.execute('INSERT INTO records (task, period, time) VALUES (?, ?, ?)',(task, period, time))
+    working_db.commit()
+    working_db.close()
+    print('Done.')
 
 def speak(string):
     speak_engine = pyttsx3.init()
@@ -83,15 +96,20 @@ def take_break():
     speak('Okay, stop and take a short break.')
     time.sleep(300)
 
-def init(cont='none'):
+def init():
+    print('===')
     for action, hotkey in menu.items():
         print('{} ({})'.format(action.ljust(13), hotkey))
+    print('===')
     command = input()
     if command.lower() == 'w':
         start_work()
         init()
     if command.lower() == 'b':
         take_break()
+        init()
+    if command.lower() == 'c':
+        add_work()
         init()
     if command.lower() == 'a':
         run_analysis()
